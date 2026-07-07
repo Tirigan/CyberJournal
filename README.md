@@ -17,7 +17,7 @@
 
 A structured, weekly cybersecurity learning portfolio.
 
-Built by someone transitioning from **IT Support / MSP** into **Security Operations**.
+Built by someone transitioning from **IT** into **Security and AI**.
 
 Every lesson is practical, enterprise-focused, and written for real job readiness — not just theory.
 
@@ -88,7 +88,7 @@ CyberJournal/
 
 ## 📅 Schedule
 
-New lessons drop every **Wednesday** — automated, structured, and portfolio-ready.
+New lessons drop every **Wednesday**.
 
 ---
 
