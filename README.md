@@ -1,0 +1,2 @@
+# AI Project
+Initial repository.
