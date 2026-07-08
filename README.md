@@ -76,7 +76,8 @@ CyberJournal/
 |---|-------|------------|
 | 01 | [Windows Event Logs: 4624 & 4625](./lesson_01_windows_event_logs.md) | Authentication · Brute Force Detection |
 | 02 | [AD Enumeration & Kerberoasting](./lesson_02_ad_enumeration_and_kerberoasting.md) | Active Directory · Privilege Escalation |
-| 03 | *Coming Wednesday...* | — |
+| 03 | [Sysmon: Supercharging Windows Logging](./lesson_03_sysmon_threat_detection.md) | Detection Engineering · Threat Hunting |
+| 04 | *Coming Wednesday...* | — |
 
 ---
 
