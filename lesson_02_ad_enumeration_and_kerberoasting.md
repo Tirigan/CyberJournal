@@ -1,70 +1,76 @@
+```markdown
 # Active Directory Enumeration & Kerberoasting (Targeting Service Accounts)
 
 ## What is it?
-In an enterprise Active Directory (AD) environment, users and services authenticate using the **Kerberos protocol**. 
-When a user wants to access a service (like a SQL database or a web server running under a specific service account), they ask the Domain Controller (specifically the Key Distribution Center, or KDC) for a **Ticket Granting Service (TGS)** ticket.
-A **Service Principal Name (SPN)** is a unique identifier that associates a service instance with a specific Active Directory login account.
-**Kerberoasting** is an offline password-cracking technique where any authenticated domain user requests a TGS ticket for a service account associated with an SPN. Because the ticket is encrypted using the service account's password hash, the attacker can extract the ticket from memory, take it offline, and attempt to brute-force the password.
+In an enterprise Active Directory (AD) environment, users and services authenticate using the Kerberos protocol. When a user wants to access a service — say, a SQL database or a web app running under a specific service account — they ask the Domain Controller (specifically the Key Distribution Center, or KDC) for a Ticket Granting Service (TGS) ticket.
+
+Every service that needs this kind of authentication has a Service Principal Name (SPN), which is basically a unique tag linking that service to a specific AD account.
+
+Kerberoasting takes advantage of this. Any authenticated domain user can request a TGS ticket for a service account tied to an SPN — that part is completely normal Kerberos behavior. The catch is that the ticket gets encrypted using the service account's password hash. An attacker grabs that ticket, takes it offline, and tries to crack the password at their leisure with no risk of triggering a lockout.
 
 ## Why does it matter in cybersecurity?
-Kerberoasting is one of the most common and effective techniques for privilege escalation and lateral movement. 
-1. **No Admin Privileges Needed**: Any domain user (even a low-privileged temp worker or a compromised endpoint) can query the domain controller and request TGS tickets for all SPNs.
-2. **Stealthy**: Querying SPNs and requesting TGS tickets is a normal part of how Kerberos functions. To a basic monitoring system, it looks like standard user behavior.
-3. **High Reward**: Service accounts are frequently configured with domain administrator privileges or access to highly sensitive database servers.
+This is one of the most common paths to privilege escalation and lateral movement in AD environments, for a few reasons:
+
+1. **You don't need admin rights to try it.** Any domain user — even a low-privileged temp account or a freshly compromised workstation — can query the domain controller and request TGS tickets for every SPN it can see.
+2. **It blends in.** Requesting a service ticket is just... what Kerberos does all day. To a basic monitoring setup, this looks like normal traffic.
+3. **The payoff can be huge.** Service accounts are notorious for being overprivileged — sometimes even sitting at Domain Admin — because nobody wanted to deal with permissions properly when the service was set up.
 
 ## How attackers use it
-1. **SPN Scanning (Enumeration)**: The attacker queries Active Directory using LDAP to list all registered SPNs. This tells them which user accounts are running services.
-2. **Ticket Request**: The attacker requests a TGS ticket for target SPNs. The domain controller complies and sends the ticket.
-3. **Extraction**: Using tools like Mimikatz or Rubeus, the attacker dumps the TGS tickets from their system's memory.
-4. **Offline Cracking**: The attacker copies the tickets to their attack machine and uses `hashcat` or `John the Ripper` to brute-force the plaintext password using a wordlist (like RockYou). If the service account has a weak password, it will be cracked in minutes.
+1. **Enumeration** — query AD via LDAP to pull a list of all registered SPNs, which tells the attacker exactly which accounts are running services.
+2. **Request the ticket** — ask the DC for a TGS ticket tied to a target SPN. The DC hands it over, because that's just how Kerberos works.
+3. **Extract it** — pull the ticket out of memory using something like Mimikatz or Rubeus.
+4. **Crack it offline** — move the ticket to an attack machine and throw hashcat or John the Ripper at it with a wordlist (RockYou is the classic). If the service account's password is weak, it can fall in minutes.
 
 ## How defenders detect it
-While Kerberos ticket requests are normal, Kerberoasting generates anomalous patterns:
-1. **Event ID 4769 (A Kerberos service ticket was requested)**:
-   - **Encryption Type**: Watch for requests using weaker encryption algorithms like **RC4 (0x17)**. Modern Windows environments should use **AES (0x12 / 0x18)**. Attackers often request RC4 because it is much faster to crack offline.
-   - **Frequency / Volume**: A single user requesting tickets for dozens of service accounts in a matter of seconds is highly anomalous.
-2. **Honeytokens**: Create a dummy service account (e.g., `sql-service-backup`) with a high-privilege SPN but no actual access. Configure an alert for any TGS request (Event ID 4769) targeting this dummy account. Since it has no legitimate use, any request to it is a confirmed indicator of compromise (IoC).
+Ticket requests happen constantly in a healthy AD environment, so the trick is spotting what's *abnormal* about them:
+
+**Event ID 4769** ("A Kerberos service ticket was requested") is where you'll live for this.
+- Check the encryption type. RC4 (0x17) is the one to watch for — it's much faster to crack, so attackers request it deliberately even when AES is available. A healthy environment should mostly be using AES128 (0x11) or AES256 (0x12).
+- Watch the volume. One user requesting tickets for dozens of service accounts within a few seconds isn't normal behavior — that's a scan, not a person doing their job.
+
+Honeytokens are also worth setting up: create a fake service account (something like `sql-service-backup`) with a juicy-looking SPN but no real access behind it. Since nobody has a legitimate reason to ever request a ticket for it, any 4769 hitting that account is basically a confirmed red flag.
 
 ## How to mitigate it
-1. **Strong Passwords for Service Accounts**: Ensure all service account passwords are at least 25+ characters, or migrate them to **Group Managed Service Accounts (gMSAs)**, which automatically rotate 120-character passwords.
-2. **Enforce AES Encryption**: Disable RC4 encryption for Kerberos in Group Policy, forcing the use of AES-128 and AES-256.
-3. **Least Privilege**: Ensure service accounts only have the exact permissions they need to run their services, rather than default Domain Admin rights.
+- **Make service account passwords actually strong** — 25+ characters, or better, move to Group Managed Service Accounts (gMSAs), which auto-rotate a 120-character password so nobody has to remember or manage it.
+- **Kill RC4** — disable it via Group Policy so Kerberos is forced onto AES-128/256. This alone removes a big chunk of Kerberoasting's appeal.
+- **Actually apply least privilege** — service accounts should only have what they need to run the service, not Domain Admin because it was easier at setup time.
 
-## Tools to learn
-- **Rubeus**: A C# toolset for raw Kerberos interaction and abuses (used by red teams).
-- **Impacket (`GetUserSPNs.py`)**: A Python collection of network protocols, widely used to perform Kerberoasting from non-Windows systems.
-- **PowerView**: A PowerShell script for AD enumeration.
-- **Hashcat**: A GPU-based password recovery tool used to crack the dumped tickets offline.
+## Tools worth knowing
+- **Rubeus** — C# toolset for raw Kerberos abuse, common on red teams.
+- **Impacket's `GetUserSPNs.py`** — the go-to for running Kerberoasting from a non-Windows box.
+- **PowerView** — PowerShell script for AD enumeration generally.
+- **Hashcat** — GPU-accelerated cracking, used once the tickets are offline.
 
 ## Hands-on Practice: Viewing & Enumerating SPNs
-Even without an Active Directory lab, you can inspect your local computer's Kerberos tickets and query SPNs using built-in Windows tools.
+You don't need a full AD lab to poke at this — a couple of built-in Windows tools will get you started.
 
-### Part 1: Inspecting Your Active Kerberos Tickets
-1. Open Command Prompt or PowerShell.
-2. Run `klist` to view your current cached Kerberos tickets.
-   ```cmd
-   klist
-   ```
-   *Note: If you are on a home computer not joined to a domain, this list may be empty or show local credentials.*
+**Part 1: Check your current Kerberos tickets**
 
-### Part 2: Querying SPNs (Active Directory Commands)
-If you were on an enterprise domain-joined machine, you could run the following built-in command to search for SPNs without triggering antivirus alerts:
-- **Built-in tool**:
-  ```cmd
-  setspn -T targetdomain -Q */*
-  ```
-- **PowerShell (Active Directory Module)**:
-  ```powershell
-  Get-ADUser -Filter {ServicePrincipalName -ne "$null"} -Properties ServicePrincipalName | Select-Object Name, ServicePrincipalName
-  ```
+Open Command Prompt or PowerShell and run:
+```cmd
+klist
+```
+If you're on a home machine that isn't domain-joined, don't be surprised if this comes back empty or just shows local stuff.
+
+**Part 2: Querying SPNs**
+
+On an actual domain-joined machine, these would let you search for SPNs without tripping AV:
+```cmd
+setspn -T targetdomain -Q */*
+```
+Or via the AD PowerShell module:
+```powershell
+Get-ADUser -Filter {ServicePrincipalName -ne "$null"} -Properties ServicePrincipalName | Select-Object Name, ServicePrincipalName
+```
 
 ## Interview Questions
-1. *What is an SPN (Service Principal Name) in Active Directory, and how does Kerberoasting abuse it?*
-2. *Why is Kerberoasting considered a highly stealthy attack, and what makes it difficult to detect?*
-3. *If you are reviewing Event ID 4769 logs in your SIEM, what specific fields would you look at to detect potential Kerberoasting?*
-4. *How does the encryption type requested in a TGS ticket affect an attacker's ability to crack it?*
-5. *What are Group Managed Service Accounts (gMSAs), and how do they mitigate the risk of Kerberoasting?*
+1. What is an SPN, and how does Kerberoasting take advantage of it?
+2. Why is Kerberoasting considered so hard to detect?
+3. If you're staring at a pile of Event ID 4769 logs in your SIEM, what fields actually tell you something useful?
+4. Why does the encryption type on a TGS ticket matter for how easily it can be cracked?
+5. What are gMSAs, and how do they cut down Kerberoasting risk?
 
 ## Next Topics
-- **Active Directory Delegation**: Unconstrained, Constrained, and Resource-Based Constrained Delegation security risks.
-- **Sysmon Logging for Execution**: Setting up Sysmon to monitor command-line arguments and detect offensive tools like Rubeus.
+- **AD Delegation** — unconstrained, constrained, and resource-based constrained delegation, and why each carries its own risks.
+- **Sysmon for execution logging** — setting it up to catch command-line arguments from tools like Rubeus in action.
+```
