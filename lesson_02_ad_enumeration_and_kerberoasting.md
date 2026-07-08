@@ -1,4 +1,3 @@
-```markdown
 # Active Directory Enumeration & Kerberoasting (Targeting Service Accounts)
 
 ## What is it?
@@ -73,4 +72,3 @@ Get-ADUser -Filter {ServicePrincipalName -ne "$null"} -Properties ServicePrincip
 ## Next Topics
 - **AD Delegation** — unconstrained, constrained, and resource-based constrained delegation, and why each carries its own risks.
 - **Sysmon for execution logging** — setting it up to catch command-line arguments from tools like Rubeus in action.
-```
