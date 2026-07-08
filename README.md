@@ -17,9 +17,9 @@
 
 A structured, weekly cybersecurity learning portfolio.
 
-Built by someone transitioning from **IT** into **Security and AI**.
+Built by someone studying **Security and AI**.
 
-Every lesson is practical, enterprise-focused, and written for real job readiness — not just theory.
+Every lesson is practical, enterprise-focused, and written for the real world.
 
 ---
 
