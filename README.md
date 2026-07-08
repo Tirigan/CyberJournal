@@ -41,7 +41,8 @@ Junior Security Engineer
 CyberJournal/
 ├── lesson_01_windows_event_logs.md          # Auth events, 4624/4625, logon types
 ├── lesson_02_ad_enumeration_kerberoasting.md # Kerberos, SPNs, TGS ticket attacks
-├── lesson_##_<topic>.md                     # Weekly drops every Wednesday
+├── lesson_03_sysmon_threat_detection.md     # Sysmon process, network & DLL loading
+├── lesson_04_mitre_attack.md                # MITRE ATT&CK mapping & coverage visualization
 └── README.md                               # You are here
 ```
 
@@ -77,7 +78,8 @@ CyberJournal/
 | 01 | [Windows Event Logs: 4624 & 4625](./lesson_01_windows_event_logs.md) | Authentication · Brute Force Detection |
 | 02 | [AD Enumeration & Kerberoasting](./lesson_02_ad_enumeration_and_kerberoasting.md) | Active Directory · Privilege Escalation |
 | 03 | [Sysmon: Supercharging Windows Logging](./lesson_03_sysmon_threat_detection.md) | Detection Engineering · Threat Hunting |
-| 04 | *Coming Wednesday...* | — |
+| 04 | [MITRE ATT&CK Framework: Detection Mapping](./lesson_04_mitre_attack.md) | Threat Intelligence · Coverage Mapping |
+| 05 | *Coming Wednesday...* | — |
 
 ---
 
