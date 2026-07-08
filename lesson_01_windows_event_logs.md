@@ -5,14 +5,13 @@ In Windows environments, the Security log is the primary source of truth for aud
 - **Event ID 4624**: Successful Account Logon
 - **Event ID 4625**: Failed Account Logon
 
-Importantly, Windows distinguishes *how* the login occurred using **Logon Types**. For example, a local interactive login (sitting at the keyboard) is Logon Type 2, whereas a network connection (like mapping a network drive or accessing a shared folder) is Logon Type 3, and Remote Desktop (RDP) is Logon Type 10.
+Windows also tracks how someone logged in, called the Logon Type. Sitting down at the actual keyboard is Type 2. Connecting to a shared drive over the network is Type 3. Remote Desktop is Type 10. That distinction turns out to matter a lot for spotting attacks..
 
 ## Why does it matter in cybersecurity?
 As a defender, authentication logs are the first line of detection for credential abuse. Attackers rarely exploit zero-days; instead, they use stolen credentials (obtained via phishing, dumping memory, or brute force) to move laterally across a network. Monitoring 4624 and 4625 events allows security analysts to pinpoint credential stuffing, brute-force attacks, and lateral movement.
 
 ## How attackers use it
-1. **Brute-Force & Credential Stuffing**: An attacker runs a tool like Hydra or a PowerShell script against an exposed service (like RDP or WinRM), attempting thousands of passwords. This generates hundreds of Event ID 4625 (failed logon) alerts in a short time.
-2. **Lateral Movement**: After compromising a workstation, an attacker uses stolen domain admin credentials to access a domain controller via PowerShell Remoting (Logon Type 3 or 9) or RDP (Logon Type 10). This creates a successful Event ID 4624 from an anomalous source IP.
+A brute-force or credential-stuffing attempt shows up as a wall of 4625 failures in a short window — think a script hammering RDP or WinRM with thousands of password guesses. Lateral movement looks different: an attacker who's already compromised one machine uses stolen admin creds to hop onto a domain controller, usually via PowerShell Remoting (Type 3) or RDP (Type 10). That shows up as a successful 4624 — but from a source that has no business logging in there.
 
 ## How defenders detect it
 Defenders look for patterns in the Security log:
@@ -57,11 +56,11 @@ Let's run a query on your local Windows machine to find all failed logon attempt
    ```
 
 ## Interview Questions
-1. *What is the difference between Windows Event ID 4624 and Event ID 4625?*
-2. *If you see an Event ID 4624 with Logon Type 10, what does that indicate?*
-3. *What field in a 4625 event would you inspect to find the physical source of a brute-force attack?*
-4. *How does password spraying differ from a standard brute-force attack in Event Logs, and how would you adjust your detection thresholds?*
-5. *Why is Logon Type 3 common in lateral movement, and what services generate it?*
+1. *Difference between 4624 and 4625?*
+2. *What does a 4624 with Logon Type 10 tell you?*
+3. *Which field on a 4625 points you to the attack's source?*
+4. *How is password spraying different from brute force in the logs, and how do your detection thresholds change?*
+5. *Why does lateral movement so often show up as Logon Type 3, and what services trigger it?*
 
 ## Next Topics
 - **Kerberos Authentication Flow (AS-REQ, TGS, TGT)** and how attacks like Kerberoasting work.
